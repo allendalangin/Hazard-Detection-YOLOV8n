@@ -1,0 +1,9 @@
+# Ignore the thesis directory
+.thesis/
+
+# Ignore all dataset folders by wildcard
+*_datasets/
+*dataset/
+
+# --- EXCEPTIONS ---
+# Do NOT ignore the cleaned_hazard_dataset
