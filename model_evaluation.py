@@ -1,25 +1,58 @@
+import numpy as np
 from ultralytics import YOLO
 
-def main():
-    # Load your best trained model from the training run
-    model = YOLO('runs/detect/yolov8n_hazard_model_final/weights/best.pt')
+def calculate_metrics():
+    """
+    Loads a trained YOLOv8 model, evaluates it on the test set,
+    and calculates precision, recall, and overall accuracy.
+    """
+    # --- CONFIGURATION ---
+    # Path to your best trained model file
+    model_path = 'runs/detect/yolov8n_TUNED_model_final/weights/best.pt'
+    # --- END OF CONFIGURATION ---
 
-    # Run evaluation on the 'test' split of your data
-    # Ensure your data.yaml file has a 'test:' path pointing to your test images
+    print("🚀 Loading model and running evaluation on the test set...")
+
+    # Load your trained model
+    model = YOLO(model_path)
+
+    # Evaluate the model on the 'test' split of your data
+    # This generates all the metrics we need
     metrics = model.val(split='test')
 
-    # --- Print the key metrics ---
-    print("-" * 30)
-    print("Final Model Performance Metrics:")
+    # --- Standard Metrics (Precision and Recall) ---
+    # These are directly available from the metrics object
+    precision = metrics.box.mp  # Mean Precision
+    recall = metrics.box.mr     # Mean Recall
 
-    # mAP scores (primary accuracy indicators)
-    print(f"  - mAP50-95 (Box): {metrics.box.map:.4f}")   # More strict
-    print(f"  - mAP50 (Box):    {metrics.box.map50:.4f}") # Standard metric, as seen in your screenshot
+    print("\n" + "="*40)
+    print("Standard Performance Metrics:")
+    print(f"  - Precision: {precision:.4f} ({precision:.2%})")
+    print("    (When the model detects a hazard, it's correct this often)")
+    print(f"  - Recall:    {recall:.4f} ({recall:.2%})")
+    print("    (Of all actual hazards, the model successfully finds this many)")
+    print("="*40)
 
-    # Precision and Recall
-    print(f"  - Precision (Box):  {metrics.box.mp:.4f}")  # 'P' in your screenshot
-    print(f"  - Recall (Box):     {metrics.box.mr:.4f}")   # 'R' in your screenshot
-    print("-" * 30)
 
+    # --- Overall Accuracy from Confusion Matrix ---
+    # Get the confusion matrix data
+    confusion_matrix = metrics.confusion_matrix.matrix
+
+    # Calculate Overall Accuracy = (Sum of Correct Predictions) / (Total Predictions)
+    # The diagonal of the matrix represents correct predictions (True Positives)
+    true_positives = np.trace(confusion_matrix)
+    total_instances = np.sum(confusion_matrix)
+
+    if total_instances > 0:
+        overall_accuracy = true_positives / total_instances
+        print("\nOverall Accuracy (from Confusion Matrix):")
+        print(f"  - Accuracy: {overall_accuracy:.4f} ({overall_accuracy:.2%})")
+        print("    (Calculated as: Sum of diagonal / Sum of all cells)")
+        print("="*40)
+    else:
+        print("Could not calculate overall accuracy. Ensure the confusion matrix was generated.")
+
+
+# This block ensures the code only runs when the script is executed directly
 if __name__ == '__main__':
-    main()
+    calculate_metrics()
